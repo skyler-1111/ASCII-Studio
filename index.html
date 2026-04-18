@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOID_ASCII // Image & Video Processor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Inter:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-primary: #55ff55;
+            --void-bg: #050505;
+            --border-dim: #1a1a1a;
+        }
+
+        body {
+            background-color: var(--void-bg);
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-primary); }
+
+        /* ASCII Output Container */
+        #ascii-container {
+            line-height: 0.8; 
+            font-size: 8px; 
+            white-space: pre;
+            cursor: crosshair;
+            transition: color 0.3s ease;
+            display: block;
+            margin: auto;
+            text-align: center;
+        }
+
+        .ethereal-border {
+            border: 1px solid var(--border-dim);
+            transition: border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ethereal-border:hover {
+            border-color: #444;
+        }
+
+        .control-panel {
+            background: #080808;
+            border-left: 1px solid var(--border-dim);
+        }
+
+        .btn-action {
+            border: 1px solid var(--border-dim);
+            background: transparent;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .btn-action:hover {
+            border-color: var(--neon-primary);
+            color: var(--neon-primary);
+        }
+
+        .btn-active {
+            border-color: var(--neon-primary);
+            color: var(--neon-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        #video-preview, #canvas-hidden {
+            display: none;
+            position: absolute;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* Scanline Overlay */
+        .scanline {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        .vibe-cyberpunk { --neon-primary: #00ffcc; }
+        .vibe-goth { --neon-primary: #ff0044; }
+        .vibe-phantom { --neon-primary: #ffffff; }
+        .vibe-bios { --neon-primary: #55ff55; }
+
+        input[type=range] {
+            height: 2px;
+            -webkit-appearance: none;
+            background: #1a1a1a;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--neon-primary);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="vibe-bios">
+    <div class="scanline"></div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Main Viewer -->
+        <main class="flex-1 relative flex flex-col p-4 md:p-8">
+            <header class="flex justify-between items-start mb-6">
+                <div class="mono">
+                    <h1 class="text-xs font-bold tracking-[0.3em] opacity-50 mb-1">TERMINAL // ASCII_GEN</h1>
+                    <div id="status-line" class="text-[10px] uppercase text-[var(--neon-primary)]">System: Booting...</div>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="download-btn" class="btn-action px-4 py-2">Capture</button>
+                    <button id="copy-btn" class="btn-action px-4 py-2">Copy</button>
+                </div>
+            </header>
+
+            <div class="flex-1 flex items-center justify-center overflow-auto ethereal-border relative bg-black">
+                <pre id="ascii-container" class="mono leading-[0.8] tracking-tight text-[var(--neon-primary)]">
+                    <div class="p-10 opacity-20 text-center uppercase tracking-widest text-xs">
+                        [ Waiting for Input ]
+                    </div>
+                </pre>
+            </div>
+
+            <footer class="mt-4 flex justify-between items-center mono text-[9px] opacity-40 uppercase tracking-widest">
+                <div>Src: <span id="source-type">Idle</span></div>
+                <div id="coords">X: 0000 Y: 0000</div>
+                <div>Kern: 1.0.7_Stable</div>
+            </footer>
+        </main>
+
+        <!-- Sidebar Controls -->
+        <aside class="w-80 control-panel p-6 flex flex-col space-y-8 overflow-y-auto relative z-10">
+            <section>
+                <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">DATA_INGESTION</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="webcam-toggle" class="btn-action py-3">Webcam_Live</button>
+                    <label class="btn-action py-3 text-center cursor-pointer block">
+                        Import_File
+                        <input type="file" id="file-upload" class="hidden" accept="image/*,video/*">
+                    </label>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">ALGORITHM_PRESET</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="style-btn btn-action py-2 btn-active" data-set="bios">Bios_Retro</button>
+                    <button class="style-btn btn-action py-2" data-set="blocks">High_Density</button>
+                    <button class="style-btn btn-action py-2" data-set="binary">Binary_Flow</button>
+                    <button class="style-btn btn-action py-2" data-set="minimal">Micro_Dots</button>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">CHROMA_VIBE</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="vibe-btn btn-action py-2" data-vibe="bios">Matrix</button>
+                    <button class="vibe-btn btn-action py-2" data-vibe="cyberpunk">Neon_Night</button>
+                    <button class="vibe-btn btn-action py-2" data-vibe="goth">Blood_Moon</button>
+                    <button class="vibe-btn btn-action py-2" data-vibe="phantom">Void_Eth</button>
+                </div>
+            </section>
+
+            <section class="space-y-6">
+                <div>
+                    <div class="flex justify-between mono text-[10px] mb-2 opacity-30">
+                        <span>PIXEL_DENSITY</span>
+                        <span id="res-val">120</span>
+                    </div>
+                    <input type="range" id="res-slider" min="40" max="250" value="120" class="w-full">
+                </div>
+                <div>
+                    <div class="flex justify-between mono text-[10px] mb-2 opacity-30">
+                        <span>SIGNAL_GAIN</span>
+                        <span id="contrast-val">1.5</span>
+                    </div>
+                    <input type="range" id="contrast-slider" min="0.5" max="5.0" step="0.1" value="1.5" class="w-full">
+                </div>
+            </section>
+
+            <section class="pt-6 border-t border-zinc-900 mono text-[9px] space-y-2 opacity-20">
+                <p>AUTH: NAKZ_CORE</p>
+                <p>ENCR: VOID_PROTOCOL</p>
+            </section>
+        </aside>
+    </div>
+
+    <video id="video-preview" autoplay playsinline muted></video>
+    <canvas id="canvas-hidden"></canvas>
+
+    <script>
+        const video = document.getElementById('video-preview');
+        const canvas = document.getElementById('canvas-hidden');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const asciiContainer = document.getElementById('ascii-container');
+        const resSlider = document.getElementById('res-slider');
+        const contrastSlider = document.getElementById('contrast-slider');
+        const statusLine = document.getElementById('status-line');
+        const coords = document.getElementById('coords');
+        const sourceTypeLabel = document.getElementById('source-type');
+        
+        let currentStream = null;
+        let isProcessing = false;
+        let charsetType = 'bios';
+        let frameRequest;
+
+        const CHARSETS = {
+            bios: '$MNW0OXK0dxclc:;,. ',
+            blocks: '█▓▒░ ',
+            binary: '10 ',
+            minimal: '●•· ',
+        };
+
+        // UI Listeners
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('btn-active'));
+                btn.classList.add('btn-active');
+                charsetType = btn.dataset.set;
+                if (!isProcessing && sourceTypeLabel.textContent !== "Idle") {
+                    drawASCII(); // Re-render for static images
+                }
+            });
+        });
+
+        document.querySelectorAll('.vibe-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const vibe = btn.dataset.vibe;
+                document.body.className = `vibe-${vibe}`;
+                document.querySelectorAll('.vibe-btn').forEach(b => b.classList.remove('btn-active'));
+                btn.classList.add('btn-active');
+            });
+        });
+
+        resSlider.addEventListener('input', (e) => {
+            document.getElementById('res-val').textContent = e.target.value;
+            if (!isProcessing && sourceTypeLabel.textContent === "Static_Image") drawASCII();
+        });
+
+        contrastSlider.addEventListener('input', (e) => {
+            document.getElementById('contrast-val').textContent = e.target.value;
+            if (!isProcessing && sourceTypeLabel.textContent === "Static_Image") drawASCII();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            coords.textContent = `X: ${e.clientX.toString().padStart(4, '0')} Y: ${e.clientY.toString().padStart(4, '0')}`;
+        });
+
+        // Webcam Action
+        document.getElementById('webcam-toggle').addEventListener('click', async () => {
+            if (currentStream) {
+                stopProcessing();
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 }, 
+                    audio: false 
+                });
+                currentStream = stream;
+                video.srcObject = stream;
+                sourceTypeLabel.textContent = "Webcam_Live";
+                statusLine.textContent = "System: Syncing_Hardware";
+                
+                // Force video start
+                video.onloadedmetadata = () => {
+                    video.play().then(() => {
+                        startProcessing();
+                    }).catch(e => {
+                        statusLine.textContent = "Error: Video_Playback_Blocked";
+                    });
+                };
+            } catch (err) {
+                statusLine.textContent = "Error: Webcam_Denied";
+            }
+        });
+
+        // File Action
+        document.getElementById('file-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            stopProcessing();
+            const reader = new FileReader();
+
+            if (file.type.startsWith('image/')) {
+                sourceTypeLabel.textContent = "Static_Image";
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        processStaticImage(img);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type.startsWith('video/')) {
+                sourceTypeLabel.textContent = "Video_Stream";
+                video.src = URL.createObjectURL(file);
+                video.onloadedmetadata = () => {
+                    video.play();
+                    startProcessing();
+                };
+            }
+        });
+
+        function startProcessing() {
+            isProcessing = true;
+            statusLine.textContent = "System: Processing_Live";
+            requestAnimationFrame(renderLoop);
+        }
+
+        function stopProcessing() {
+            isProcessing = false;
+            if (frameRequest) cancelAnimationFrame(frameRequest);
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            video.srcObject = null;
+            video.src = "";
+            sourceTypeLabel.textContent = "Idle";
+            statusLine.textContent = "System: Idle";
+        }
+
+        function processStaticImage(img) {
+            isProcessing = false;
+            const width = parseInt(resSlider.value);
+            const height = Math.floor((img.height / img.width) * width * 0.5); 
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            drawASCII();
+            statusLine.textContent = "System: Static_Render_Complete";
+        }
+
+        function renderLoop() {
+            if (!isProcessing) return;
+            if (video.readyState >= 2) {
+                const width = parseInt(resSlider.value);
+                const height = Math.floor((video.videoHeight / video.videoWidth) * width * 0.5); 
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(video, 0, 0, width, height);
+                drawASCII();
+            }
+            frameRequest = requestAnimationFrame(renderLoop);
+        }
+
+        function drawASCII() {
+            const width = canvas.width;
+            const height = canvas.height;
+            if (width === 0 || height === 0) return;
+
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const pixels = imageData.data;
+            const contrast = parseFloat(contrastSlider.value);
+            const chars = CHARSETS[charsetType];
+            const charLen = chars.length - 1;
+            
+            let output = "";
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    const r = pixels[i];
+                    const g = pixels[i+1];
+                    const b = pixels[i+2];
+                    
+                    // NTSC Luminance
+                    let luma = (0.299 * r + 0.587 * g + 0.114 * b);
+                    
+                    // Contrast Stretch
+                    luma = (luma - 128) * contrast + 128;
+                    luma = Math.max(0, Math.min(255, luma));
+
+                    const charIdx = Math.floor((luma / 255) * charLen);
+                    output += chars[charLen - charIdx];
+                }
+                output += "\n";
+            }
+
+            asciiContainer.textContent = output;
+            
+            // Dynamic Font Scaler
+            const parent = asciiContainer.parentElement;
+            const fWidth = (parent.clientWidth - 40) / width;
+            const fHeight = ((parent.clientHeight - 40) / height) / 0.8;
+            asciiContainer.style.fontSize = `${Math.max(1, Math.min(14, Math.min(fWidth, fHeight)))}px`;
+        }
+
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const textArea = document.createElement("textarea");
+            textArea.value = asciiContainer.textContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            statusLine.textContent = "System: Data_Buffered";
+        });
+
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const blob = new Blob([asciiContainer.textContent], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `void_render_${Date.now()}.txt`;
+            a.click();
+        });
+
+        window.onload = () => { statusLine.textContent = "System: Online // Ingress_Ready"; };
+    </script>
+</body>
+</html>
