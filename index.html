@@ -163,6 +163,9 @@
                 <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">ALGORITHM_PRESET</h3>
                 <div class="grid grid-cols-2 gap-2">
                     <button class="style-btn btn-action py-2 btn-active" data-set="bios">Bios_Retro</button>
+                    <button class="style-btn btn-action py-2" data-set="neon">Neon_Flux</button>
+                    <button class="style-btn btn-action py-2" data-set="matrix">Digital_Rain</button>
+                    <button class="style-btn btn-action py-2" data-set="film">Film_Grain</button>
                     <button class="style-btn btn-action py-2" data-set="blocks">High_Density</button>
                     <button class="style-btn btn-action py-2" data-set="binary">Binary_Flow</button>
                     <button class="style-btn btn-action py-2" data-set="minimal">Micro_Dots</button>
@@ -224,6 +227,9 @@
 
         const CHARSETS = {
             bios: '$MNW0OXK0dxclc:;,. ',
+            neon: '@%#*+=-:. ',
+            matrix: '01╳✦✧✱ ',
+            film: '@#%|/\\-_. ',
             blocks: '█▓▒░ ',
             binary: '10 ',
             minimal: '●•· ',
@@ -235,8 +241,8 @@
                 document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('btn-active'));
                 btn.classList.add('btn-active');
                 charsetType = btn.dataset.set;
-                if (!isProcessing && sourceTypeLabel.textContent !== "Idle") {
-                    drawASCII(); // Re-render for static images
+                if (sourceTypeLabel.textContent !== "Idle") {
+                    drawASCII();
                 }
             });
         });
