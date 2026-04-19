@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID_ASCII // Image & Video Processor</title>
+    <title>ASCII Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Inter:wght@300;500&display=swap" rel="stylesheet">
     <style>
@@ -23,13 +23,11 @@
 
         .mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #000; }
         ::-webkit-scrollbar-thumb { background: #333; }
         ::-webkit-scrollbar-thumb:hover { background: var(--neon-primary); }
 
-        /* ASCII Output Container */
         #ascii-container {
             line-height: 0.8; 
             font-size: 8px; 
@@ -83,7 +81,6 @@
             opacity: 0;
         }
 
-        /* Scanline Overlay */
         .scanline {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -118,7 +115,6 @@
     <div class="scanline"></div>
 
     <div class="flex h-screen overflow-hidden">
-        <!-- Main Viewer -->
         <main class="flex-1 relative flex flex-col p-4 md:p-8">
             <header class="flex justify-between items-start mb-6">
                 <div class="mono">
@@ -145,8 +141,6 @@
                 <div>Kern: 1.0.7_Stable</div>
             </footer>
         </main>
-
-        <!-- Sidebar Controls -->
         <aside class="w-80 control-panel p-6 flex flex-col space-y-8 overflow-y-auto relative z-10">
             <section>
                 <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">DATA_INGESTION</h3>
@@ -160,11 +154,11 @@
             </section>
 
             <section>
-                <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">ALGORITHM_PRESET</h3>
+                <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">ASCII_PRESET</h3>
                 <div class="grid grid-cols-2 gap-2">
                     <button class="style-btn btn-action py-2 btn-active" data-set="bios">Bios_Retro</button>
-                    <button class="style-btn btn-action py-2" data-set="neon">Neon_Flux</button>
-                    <button class="style-btn btn-action py-2" data-set="matrix">Digital_Rain</button>
+                    <button class="style-btn btn-action py-2" data-set="neon">FLuxx_wave</button>
+                    <button class="style-btn btn-action py-2" data-set="matrix">Virtual_Rain</button>
                     <button class="style-btn btn-action py-2" data-set="film">Film_Grain</button>
                     <button class="style-btn btn-action py-2" data-set="blocks">High_Density</button>
                     <button class="style-btn btn-action py-2" data-set="binary">Binary_Flow</button>
@@ -173,12 +167,12 @@
             </section>
 
             <section>
-                <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">CHROMA_VIBE</h3>
+                <h3 class="mono text-[10px] mb-4 opacity-30 tracking-tighter">COLORS_VIBE</h3>
                 <div class="grid grid-cols-2 gap-2">
                     <button class="vibe-btn btn-action py-2" data-vibe="bios">Matrix</button>
-                    <button class="vibe-btn btn-action py-2" data-vibe="cyberpunk">Neon_Night</button>
+                    <button class="vibe-btn btn-action py-2" data-vibe="cyberpunk">Cyan</button>
                     <button class="vibe-btn btn-action py-2" data-vibe="goth">Blood_Moon</button>
-                    <button class="vibe-btn btn-action py-2" data-vibe="phantom">Void_Eth</button>
+                    <button class="vibe-btn btn-action py-2" data-vibe="phantom">B&W</button>
                 </div>
             </section>
 
@@ -201,7 +195,7 @@
 
             <section class="pt-6 border-t border-zinc-900 mono text-[9px] space-y-2 opacity-20">
                 <p>AUTH: NAKZ_CORE</p>
-                <p>ENCR: VOID_PROTOCOL</p>
+                <p>ENCR: XX_XX</p>
             </section>
         </aside>
     </div>
@@ -235,7 +229,6 @@
             minimal: '●•· ',
         };
 
-        // UI Listeners
         document.querySelectorAll('.style-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('btn-active'));
@@ -285,8 +278,7 @@
                 video.srcObject = stream;
                 sourceTypeLabel.textContent = "Webcam_Live";
                 statusLine.textContent = "System: Syncing_Hardware";
-                
-                // Force video start
+      
                 video.onloadedmetadata = () => {
                     video.play().then(() => {
                         startProcessing();
@@ -299,7 +291,6 @@
             }
         });
 
-        // File Action
         document.getElementById('file-upload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -405,7 +396,6 @@
 
             asciiContainer.textContent = output;
             
-            // Dynamic Font Scaler
             const parent = asciiContainer.parentElement;
             const fWidth = (parent.clientWidth - 40) / width;
             const fHeight = ((parent.clientHeight - 40) / height) / 0.8;
@@ -423,11 +413,44 @@
         });
 
         document.getElementById('download-btn').addEventListener('click', () => {
-            const blob = new Blob([asciiContainer.textContent], { type: 'text/plain' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `void_render_${Date.now()}.txt`;
-            a.click();
+            const exportCanvas = document.createElement('canvas');
+            const exportCtx = exportCanvas.getContext('2d');
+            const text = asciiContainer.textContent.trimEnd();
+            const lines = text.split('\n');
+            const styles = getComputedStyle(asciiContainer);
+            const bgStyles = getComputedStyle(asciiContainer.parentElement);
+            const fontSize = parseFloat(styles.fontSize);
+            const lineHeight = parseFloat(styles.lineHeight) || fontSize * 1.1;
+            const padding = 20;
+            const scale = window.devicePixelRatio || 1;
+
+            exportCtx.font = `${styles.fontWeight} ${fontSize}px ${styles.fontFamily}`;
+            exportCtx.textBaseline = 'top';
+
+            const maxLineWidth = Math.max(...lines.map(line => exportCtx.measureText(line).width));
+            const canvasWidth = Math.ceil(maxLineWidth + padding * 2);
+            const canvasHeight = Math.ceil(lines.length * lineHeight + padding * 2);
+
+            exportCanvas.width = canvasWidth * scale;
+            exportCanvas.height = canvasHeight * scale;
+            exportCanvas.style.width = `${canvasWidth}px`;
+            exportCanvas.style.height = `${canvasHeight}px`;
+
+            exportCtx.setTransform(scale, 0, 0, scale, 0, 0);
+            exportCtx.fillStyle = bgStyles.backgroundColor || '#000';
+            exportCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+            exportCtx.fillStyle = styles.color;
+            exportCtx.font = `${styles.fontWeight} ${fontSize}px ${styles.fontFamily}`;
+
+            lines.forEach((line, index) => {
+                exportCtx.fillText(line, padding, padding + index * lineHeight);
+            });
+
+            const link = document.createElement('a');
+            link.href = exportCanvas.toDataURL('image/png');
+            link.download = `void_render_${Date.now()}.png`;
+            link.click();
+            statusLine.textContent = "System: Image_Captured";
         });
 
         window.onload = () => { statusLine.textContent = "System: Online // Ingress_Ready"; };
